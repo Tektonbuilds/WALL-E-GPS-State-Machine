@@ -17,7 +17,6 @@ int camera = 16;
 unsigned long previousMillis = 0;        // will store last time LED was updated
 unsigned long gps_lock_millis = 0;
 int gpsLedState = LOW;             // gpsLedState used to set the LED
-int redPinState = LOW;
 const long interval = 1000;           // interval at which to blink (milliseconds)
 bool gpsLock;
 // GPS stuff
@@ -161,8 +160,6 @@ void loop()
             digitalWrite(gpsLed, gpsLedState);
           }
         }
-	 currentMillis = 0;
-	 previousMillis = 0;
         break;
      case 3: 
         Serial.println("made it to case 3!");
@@ -181,16 +178,10 @@ void loop()
         digitalWrite(camera, HIGH);
         // flash 5 times
         for (int i = 0; i < 5; i ++) {   
-	     currentMillis = millis();
-            if (currentMillis - previousMillis >= interval) {
-            	 previousMillis = currentMillis;    
-            	 if (redPinState == LOW) {
-                  redPinState = HIGH;
-            	 } else {
-                  redPinState = LOW;
-            	 }
-	        digitalWrite(redPin, redPinState);
-	     }
+            digitalWrite(redPin, HIGH);
+            delay(1000);
+            digitalWrite(redPin, LOW);
+            delay(2000);
         }
         state = 4;
         break;
