@@ -29,6 +29,8 @@ char gps_buffer[500];
 // variables to store most up to date information
 String current_gps_buffer;
 char current_gps_string[500];
+String gps_no_lock_buffer;
+char gps_no_lock_string[500];
 
 int reading;           // the current reading from the input pin
 int previous = LOW;    // the previous reading from the input pin
@@ -129,10 +131,11 @@ void loop()
           memset(&gps_buffer[0], 0, sizeof(gps_buffer));
           buffer_filled = false;
         }
-        // if the GPS doesn't get signal within some amount of time, move on
-//        if (millis() >= 5000) {
-//          state = 2;
-//        }
+        // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
+        reading = analogRead(buttonPin);
+        if (reading > 150) {
+          state = 3;
+        }
         break;
     case 2:
 //        Serial.println("Numbah 2!!!!");
@@ -161,7 +164,15 @@ void loop()
      case 3: 
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
-        writeToSD(current_gps_string);
+        if (gpsLock) {
+            // 
+            writeToSD(current_gps_string);
+        }
+        else {
+           gps_no_lock_buffer = "GPS did not acquire a lock, and button override was used.\n";
+           gps_no_lock_buffer.toCharArray(gps_no_lock_string, 500);
+           writeToSD(gps_no_lock_string);
+        }
         // write to the SD card with the time and GPS coords
         // start recording (for now, turn on an LED)
         digitalWrite(camera, HIGH);
