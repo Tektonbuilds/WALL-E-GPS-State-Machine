@@ -347,8 +347,9 @@ bool isGpsStringValid(char string[]) {
     }
   }
   
-  if (string[++i] != 'N') {
-    // Serial.println("North N not found");
+  char ns = string[++i];
+  if (ns != 'N' && ns != 'S') {
+    // Serial.println("North N and South S not found");
     return false;
   }
   
@@ -374,8 +375,9 @@ bool isGpsStringValid(char string[]) {
     }
   }
   
-  if (string[++i] != 'W') {
-    // Serial.println("West W not found");
+  char we = string[++i];
+  if (we != 'W' && we != 'E') {
+    // Serial.println("West W and East E not found");
     return false;
   }
   
@@ -392,21 +394,44 @@ void printGpsTimeAndCoords(char string[]) {
     if (string[i] == '\0' ) {
       return;
     }
-    
-    if ((numCommas == 1 || numCommas == 3 || numCommas == 5) 
-      && string[i] != ',') {
-        if (numCommas == 1) { // store the gps information into separate variables
-//          current_time_string 
-          const char* utc = (const char*) string[i];
-          obtained_gps_utc = atol(utc);
-          gps_lock_millis = millis();
-        } else if (numCommas == 3) {
-          north_south_coord = string[i];
-        } else if (numCommas) {
-          east_west_coord = string[i];
-        }
-        Serial.print(string[i]);
+
+    // To print North, South, East, and West properly
+    if (string[i] != ',') {
+      switch (numCommas) {
+      case 1:
+        // store the gps information into separate variables
+	//          current_time_string 
+        //cout << string[i];
+	const char* utc = (const char*) string[i];
+	obtained_gps_utc = atol(utc);
+	gps_lock_millis = millis();
         current_gps_buffer.concat(string[i]);
+        break;
+      case 3:
+//         cout << string[i];
+	north_south_coord = string[i];
+        current_gps_buffer.concat(string[i]);
+        break;
+      case 4:
+//         cout << " " << string[i] << ", ";
+        current_gps_buffer.concat(" ");
+        current_gps_buffer.concat(string[i]);
+        current_gps_buffer.concat(", ");
+        break;
+      case 5:
+//         cout << string[i];
+	east_west_coord = string[i];
+        current_gps_buffer.concat(string[i]);
+        break;
+      case 6:
+//         cout << " " << string[i] << "\n";
+        current_gps_buffer.concat(" ");
+        current_gps_buffer.concat(string[i]);
+        current_gps_buffer.concat("\n");
+        //current_gps_buffer = "Time: " + obtained_gps_utc + "," + north_south_coord + "N, " + east_west_coord + "W\n";
+        current_gps_buffer.toCharArray(current_gps_string, 500);
+        return;
+      }
     }
     
     if (string[i] == ',') {
@@ -414,23 +439,13 @@ void printGpsTimeAndCoords(char string[]) {
       
       switch (numCommas) {
       case 1:
-        Serial.print("Time: ");
+        //cout << "Time: ";
         current_gps_buffer = "Time: ";
         break;
       case 3:
-        Serial.print(", ");
+        //cout << ", ";
         current_gps_buffer.concat(", ");
         break;
-      case 5:
-        Serial.print(" N, ");
-        current_gps_buffer.concat(" N, ");
-        break;
-      case 6:
-        Serial.print(" W\n");
-        current_gps_buffer.concat(" W\n");
-//        current_gps_buffer = "Time: " + obtained_gps_utc + "," + north_south_coord + "N, " + east_west_coord + "W\n";
-        current_gps_buffer.toCharArray(current_gps_string, 500);
-        return;
       }
     }
   }
