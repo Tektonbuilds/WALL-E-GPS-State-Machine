@@ -10,6 +10,8 @@ bool isGpsStringValid(char string[]);
 void printGpsTimeAndCoords(char string[]);
 bool isGpsLocked(char string[]);
 
+int i;                                  // for while loops
+
 int buttonPin = A0;                     // the number of the input pin
 int gpsLed = 15;                        // the led that will flash when the GPS has a signal
 int redPin = 2;                         // the red LEDs used for synchronizing the two cameras
@@ -140,8 +142,21 @@ void loop()
         }
         // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
         reading = analogRead(buttonPin);
+//        while (reading > 150) {
+//          previousMillis = millis();
+//          currentMillis = millis();
+//          if (currentMillis - previousMillis >= interval) {
+//            previousMillis = currentMillis; 
+//            state = 3;
+//            previousMillis = 0;
+//            currentMillis = 0;
+//            break;
+//          }
+//        }
+        previousMillis = millis();
         if (reading > 150) {
           state = 3;
+//          delay(1000);
         }
         break;
     case 2:
@@ -152,8 +167,11 @@ void loop()
         // waiting for button to be pushed
         reading = analogRead(buttonPin);
         if (reading > 150) {
-          digitalWrite(gpsLed, LOW);
-          state = 3;
+          currentMillis = millis();
+          if (currentMillis - previousMillis >= interval) {
+            digitalWrite(gpsLed, LOW);
+            state = 3;
+          }
         }
         else {
           currentMillis = millis();
@@ -167,9 +185,9 @@ void loop()
             digitalWrite(gpsLed, gpsLedState);
           }
         }
-    	 currentMillis = 0;
+    	  currentMillis = 0;
     	 previousMillis = 0;
-        break;
+       break;
      case 3: 
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
@@ -186,17 +204,20 @@ void loop()
         // start recording (for now, turn on an LED)
         digitalWrite(camera, HIGH);
         // flash 5 times
-        for (int i = 0; i < 5; i ++) {   
-	     currentMillis = millis();
-            if (currentMillis - previousMillis >= interval) {
-            	 previousMillis = currentMillis;    
-            	 if (redPinState == LOW) {
-                  redPinState = HIGH;
-            	 } else {
-                  redPinState = LOW;
-            	 }
-	        digitalWrite(redPin, redPinState);
-	     }
+//        for (int i = 0; i < 5; i ++) {
+        i = 0;
+        while(i < 5) {   
+  	     currentMillis = millis();
+         if (currentMillis - previousMillis >= interval) {
+              	 previousMillis = currentMillis;    
+                 i++;
+              	 if (redPinState == LOW) {
+                    redPinState = HIGH;
+              	 } else {
+                    redPinState = LOW;
+              	 }
+  	        digitalWrite(redPin, redPinState);
+  	     }
         }
         state = 4;
         break;
