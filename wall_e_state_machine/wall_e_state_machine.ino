@@ -10,19 +10,14 @@ bool isGpsStringValid(char string[]);
 void printGpsTimeAndCoords(char string[]);
 bool isGpsLocked(char string[]);
 
-int i;                                  // for while loops
-
-int buttonPin = A0;                     // the number of the input pin
-int gpsLed = 15;                        // the led that will flash when the GPS has a signal
-int redPin = 2;                         // the red LEDs used for synchronizing the two cameras
+int buttonPin = A0;         // the number of the input pin
+int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
+int redPin = 2;      // the red LEDs used for synchronizing the two cameras
 int camera = 16; 
-unsigned long previousMillis = 0;       // will store last time LED was updated
-unsigned long currentMillis = 0;
-int gpsLedState = LOW;                  // gpsLedState used to set the LED
-const long interval = 1000;             // interval at which to blink (milliseconds)
-int redPinState = LOW;
+unsigned long time_now = 0; // for our delay in state 5
+int gpsLedState = LOW;             // gpsLedState used to set the LED
 bool gpsLock;
-// GPS address info for I2C reading
+// GPS stuff
 int addr = 66;
 int num_bytes = 8;
 // GPS buffer status
@@ -31,13 +26,7 @@ String buf;
 char gps_buffer[500];
 // variables to store most up to date information
 String current_gps_buffer;
-String current_time_string;
 char current_gps_string[500];
-unsigned long obtained_gps_utc  = 0;    // The time we obtained from getting the GPS lock
-unsigned long gps_lock_millis   = 0;    // The ms amount when we obtained the GPS lock
-double north_south_coord        = 0;
-double east_west_coord          = 0; 
-// Things for gps not getting a lock
 String gps_no_lock_buffer;
 char gps_no_lock_string[500];
 
@@ -51,6 +40,12 @@ int state = 1;         // the possible 4 states are waiting for GPS lock, waitin
 long time = 0;         // the last time the output pin was toggled
 long debounce = 200;   // the debounce time, increase if the output flickers
 
+void delayMillis(int time) {
+  time_now = millis();
+  while (millis() < time_now + time) {
+    delay(0);
+  }
+}
 void writeToSD(char timestamp[]) {
   File myFile = SD.open("test.txt", FILE_WRITE);
 
@@ -58,7 +53,7 @@ void writeToSD(char timestamp[]) {
   if (myFile) {
     Serial.print("Writing to test.txt...");
 //    myFile.println("testing 1, 2, 3.");
-    myFile.println(timestamp);
+  myFile.println(timestamp);
     // close the file:
     myFile.close();
     Serial.println("done.");
@@ -142,21 +137,8 @@ void loop()
         }
         // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
         reading = analogRead(buttonPin);
-//        while (reading > 150) {
-//          previousMillis = millis();
-//          currentMillis = millis();
-//          if (currentMillis - previousMillis >= interval) {
-//            previousMillis = currentMillis; 
-//            state = 3;
-//            previousMillis = 0;
-//            currentMillis = 0;
-//            break;
-//          }
-//        }
-        previousMillis = millis();
         if (reading > 150) {
           state = 3;
-//          delay(1000);
         }
         break;
     case 2:
@@ -167,27 +149,19 @@ void loop()
         // waiting for button to be pushed
         reading = analogRead(buttonPin);
         if (reading > 150) {
-          currentMillis = millis();
-          if (currentMillis - previousMillis >= interval) {
-            digitalWrite(gpsLed, LOW);
-            state = 3;
-          }
+          digitalWrite(gpsLed, LOW);
+          state = 3;
         }
         else {
-          currentMillis = millis();
-          if (currentMillis - previousMillis >= interval) {
-            previousMillis = currentMillis;    
-            if (gpsLedState == LOW) {
-              gpsLedState = HIGH;
-            } else {
-              gpsLedState = LOW;
-            }
-            digitalWrite(gpsLed, gpsLedState);
+          delayMillis(1000);    
+          if (gpsLedState == LOW) {
+            gpsLedState = HIGH;
+          } else {
+            gpsLedState = LOW;
           }
+          digitalWrite(gpsLed, gpsLedState);
         }
-    	  currentMillis = 0;
-    	 previousMillis = 0;
-       break;
+        break;
      case 3: 
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
@@ -203,21 +177,19 @@ void loop()
         // write to the SD card with the time and GPS coords
         // start recording (for now, turn on an LED)
         digitalWrite(camera, HIGH);
+        // flash the gps led three times quickly to indicate that recording has started
+        for (int i = 0; i < 3; i ++) {   
+            digitalWrite(gpsLed, HIGH);
+            delayMillis(200);
+            digitalWrite(gpsLed, LOW);
+            delayMillis(200);
+        }
         // flash 5 times
-//        for (int i = 0; i < 5; i ++) {
-        i = 0;
-        while(i < 5) {   
-  	     currentMillis = millis();
-         if (currentMillis - previousMillis >= interval) {
-              	 previousMillis = currentMillis;    
-                 i++;
-              	 if (redPinState == LOW) {
-                    redPinState = HIGH;
-              	 } else {
-                    redPinState = LOW;
-              	 }
-  	        digitalWrite(redPin, redPinState);
-  	     }
+        for (int i = 0; i < 5; i ++) {   
+            digitalWrite(redPin, HIGH);
+            delayMillis(500);
+            digitalWrite(redPin, LOW);
+            delayMillis(1000);
         }
         state = 4;
         break;
@@ -226,15 +198,55 @@ void loop()
         reading = analogRead(buttonPin);
         if (reading > 150) {
           digitalWrite(camera, LOW);
+          // flash the gps led to indicate recording has stopped
+          for (int i = 0; i < 2; i ++) {   
+            digitalWrite(gpsLed, HIGH);
+            delayMillis(200);
+            digitalWrite(gpsLed, LOW);
+            delayMillis(200);
+          }
           state = 5;
         }
         break;
      case 5:
-        Serial.println("Yay we're home!");
+        Serial.println("Yay we're home! Let's go back to state 1.");
+        delayMillis(500);
+        state = 1;
         break;
   }
 }
 
+//writeToSD(String time) {
+//  myFile = SD.open("test.txt", FILE_WRITE);
+//
+//  // if the file opened okay, write to it:
+//  if (myFile) {
+//    Serial.print("Writing to test.txt...");
+//    myFile.println("testing 1, 2, 3.");
+//    // close the file:
+//    myFile.close();
+//    Serial.println("done.");
+//  } else {
+//    // if the file didn't open, print an error:
+//    Serial.println("error opening test.txt");
+//  }
+//
+//  // re-open the file for reading:
+//  myFile = SD.open("test.txt");
+//  if (myFile) {
+//    Serial.println("test.txt:");
+//
+//    // read from the file until there's nothing else in it:
+//    while (myFile.available()) {
+//      Serial.write(myFile.read());
+//    }
+//    // close the file:
+//    myFile.close();
+//  } else {
+//    // if the file didn't open, print an error:
+//    Serial.println("error opening test.txt");
+//  }
+//}
 
 // Returns false if the input is not valid or if the input is not GPS-locked
 bool isGpsLocked(char string[]) {
@@ -416,15 +428,8 @@ void printGpsTimeAndCoords(char string[]) {
     
     if ((numCommas == 1 || numCommas == 3 || numCommas == 5) 
       && string[i] != ',') {
-        if (numCommas == 1) { // store the gps information into separate variables
-//          current_time_string 
-          const char* utc = (const char*) string[i];
-          obtained_gps_utc = atol(utc);
-          gps_lock_millis = millis();
-        } else if (numCommas == 3) {
-          north_south_coord = string[i];
-        } else if (numCommas) {
-          east_west_coord = string[i];
+        if (numCommas == 1) {
+            
         }
         Serial.print(string[i]);
         current_gps_buffer.concat(string[i]);
@@ -449,36 +454,9 @@ void printGpsTimeAndCoords(char string[]) {
       case 6:
         Serial.print(" W\n");
         current_gps_buffer.concat(" W\n");
-//        current_gps_buffer = "Time: " + obtained_gps_utc + "," + north_south_coord + "N, " + east_west_coord + "W\n";
         current_gps_buffer.toCharArray(current_gps_string, 500);
         return;
       }
     }
-  }
-}
-
-// update the time in unsigned long and string variables
-void getLatestUTC(unsigned long current_millis) {
-  unsigned long num_seconds_passed = (current_millis - gps_lock_millis)/1000;
-  unsigned long current_num_seconds = obtained_gps_utc%100;
-  unsigned long current_num_minutes = obtained_gps_utc/100;
-  unsigned long current_num_hours   = obtained_gps_utc/10000;
-  // calculate total amount of time right now
-  unsigned long total_seconds       = current_num_seconds + num_seconds_passed;
-  unsigned long total_minutes       = total_seconds/60;
-  unsigned long total_hours         = total_minutes/60;
-  // calculate new time units
-  unsigned long new_num_seconds     = total_seconds % 60;
-  unsigned long new_num_minutes     = total_minutes % 60;
-  unsigned long new_num_hours       = total_hours % 24;
-  obtained_gps_utc = new_num_hours*10000 + new_num_minutes*100 + new_num_seconds;
-  char hours[3];
-  if (new_num_hours == 0) {
-//    hours = "00";
-    sprintf(hours,"%s", "00");
-  } else if (new_num_hours/10 == 0) {
-    sprintf(hours, "0%lu", new_num_hours);
-  } else {
-    sprintf(hours, "%lu", new_num_hours); 
   }
 }
