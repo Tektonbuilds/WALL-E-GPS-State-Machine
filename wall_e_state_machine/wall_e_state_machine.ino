@@ -3,12 +3,16 @@
 #include <Wire.h>
 
 void printGpsInfo(char string[]);
-bool isDecimalCharacter(char c);
+bool isNumber(char c);
+bool isDecimalPoint(char c);
 bool isComma(char c);
 bool isNotComma(char c);
 bool isGpsStringValid(char string[]);
 void printGpsTimeAndCoords(char string[]);
 bool isGpsLocked(char string[]);
+int getHours(char string[]);
+int getMinutes(char string[]);
+int getSeconds(char string[]);
 
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
@@ -270,21 +274,20 @@ void printGpsInfo(char string[]) {
   }
 }
 
-// Makes sure the character is a dot or a number
-bool isDecimalCharacter(char c) {
+// Makes sure the character is a number
+bool isNumber(char c) {
   int asciiNum = (int) c;
   
   // 0-9
-  if (asciiNum >= 48 && asciiNum <= 57) {
-    return true;
-  }
+  return asciiNum >= 48 && asciiNum <= 57;
+}
+
+// Makes sure the character is a dot
+bool isDecimalPoint(char c) {
+  int asciiNum = (int) c;
   
   // .
-  if (asciiNum == 46) {
-    return true;
-  }
-  
-  return false;
+  return asciiNum == 46;
 }
 
 bool isComma(char c) {
@@ -316,7 +319,7 @@ bool isGpsStringValid(char string[]) {
   for (i = 0; ; i++) {
     if (gprmc[i] != '\0') {
       if (string[i] != gprmc[i]) {
-  // Serial.println("Does not contain $GPRMC");
+        // Serial.println("Does not contain $GPRMC");
         return false;
       }
     }
@@ -334,14 +337,14 @@ bool isGpsStringValid(char string[]) {
   int dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!isDecimalCharacter(c)) {
+    if (!(isNumber(c) || isDecimalPoint(c))) {
       // Serial.println("time string failed");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-  // Serial.println("time string: More than 2 dots counted");
+	// Serial.println("time string: More than 2 dots counted");
         return false;
       }
     }
@@ -367,15 +370,15 @@ bool isGpsStringValid(char string[]) {
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!isDecimalCharacter(c)) {
+    if (!(isNumber(c) || isDecimalPoint(c))) {
       // Serial.println("north coords string failed");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-  // Serial.println("north coords: More than 2 dots counted");
-  return false;
+	// Serial.println("north coords: More than 2 dots counted");
+	return false;
       }
     }
   }
@@ -395,15 +398,15 @@ bool isGpsStringValid(char string[]) {
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!isDecimalCharacter(c)) {
+    if (!(isNumber(c) || isDecimalPoint(c))) {
       // Serial.println("west coords string failed: " + c + " (" + ((int) c) + ")");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-  // Serial.println("west coords: More than 2 dots counted");
-  return false;
+	// Serial.println("west coords: More than 2 dots counted");
+	return false;
       }
     }
   }
@@ -411,6 +414,32 @@ bool isGpsStringValid(char string[]) {
   char we = string[++i];
   if (we != 'W' && we != 'E') {
     // Serial.println("West W and East E not found");
+    return false;
+  }
+  
+  // Get to 9th comma
+
+  // 7th comma
+  for (++i; string[i] != ','; i++);
+
+  // 8th comma
+  for (++i; string[i] != ','; i++);
+
+  // 9th comma
+  for (++i; string[i] != ','; i++);
+
+  // Make sure date is all numbers
+  int endIdxExclusive = i + 7;
+  for (++i; i < endIdxExclusive; i++) {
+    char c = string[i];
+    if (!isNumber(c)) {
+      //cout << "Datestamp verification failed." << endl;
+      return false;
+    }
+  }
+  // Make sure next char is a comma
+  if (isNotComma(string[i])) {
+    //cout << "Char after datestamp wasn't a comma." << endl;
     return false;
   }
   
@@ -424,7 +453,10 @@ void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
   
   for (int i = 0;; i++) {
-    if (string[i] == '\0' ) {
+    if (string[i] == '\0') {
+      //cout << "\n";
+      current_gps_buffer.concat("\n");
+      current_gps_buffer.toCharArray(current_gps_string, 500);
       return;
     }
 
@@ -457,13 +489,10 @@ void printGpsTimeAndCoords(char string[]) {
         current_gps_buffer.concat(string[i]);
         break;
       case 6:
-//         cout << " " << string[i] << "\n";
+        //cout << " " << string[i];
         current_gps_buffer.concat(" ");
         current_gps_buffer.concat(string[i]);
-        current_gps_buffer.concat("\n");
-        //current_gps_buffer = "Time: " + obtained_gps_utc + "," + north_south_coord + "N, " + east_west_coord + "W\n";
-        current_gps_buffer.toCharArray(current_gps_string, 500);
-        return;
+        break;
       }
     }
     
@@ -479,7 +508,76 @@ void printGpsTimeAndCoords(char string[]) {
         //cout << ", ";
         current_gps_buffer.concat(", ");
         break;
+      case 9:
+        //cout << ", Datestamp (DD/MM/YY): ";
+        //cout << string[++i] << string[++i] << "/" << string[++i] << string[++i] << "/" << string[++i] << string[++i];
+        current_gps_buffer.concat(", Datestamp (DD/MM/YY): ");
+        current_gps_buffer.concat(string[++i]);
+        current_gps_buffer.concat(string[++i]);
+        current_gps_buffer.concat("/");
+        current_gps_buffer.concat(string[++i]);
+        current_gps_buffer.concat(string[++i]);
+        current_gps_buffer.concat("/");
+        current_gps_buffer.concat(string[++i]);
+        current_gps_buffer.concat(string[++i]);
+        break;
       }
     }
   }
+}
+
+int getHours(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
+}
+
+int getMinutes(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  i += 2;
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
+}
+
+int getSeconds(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  i += 4;
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
 }
