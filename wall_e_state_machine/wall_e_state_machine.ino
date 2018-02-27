@@ -9,6 +9,9 @@ bool isNotComma(char c);
 bool isGpsStringValid(char string[]);
 void printGpsTimeAndCoords(char string[]);
 bool isGpsLocked(char string[]);
+int getHours(char string[]);
+int getMinutes(char string[]);
+int getSeconds(char string[]);
 
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
@@ -482,4 +485,60 @@ void printGpsTimeAndCoords(char string[]) {
       }
     }
   }
+}
+
+int getHours(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
+}
+
+int getMinutes(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  i += 2;
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
+}
+
+int getSeconds(char string[]) {
+  int numCommas = 0;
+  int i;
+  for (i = 0;; i++) {
+    if (string[i] == ',') {
+      numCommas++;
+    }
+
+    if (numCommas == 1) {
+      break;
+    }
+  }
+
+  i += 4;
+  int tens = string[++i] - '0';
+  int ones = string[++i] - '0';
+  return tens * 10 + ones;
 }
