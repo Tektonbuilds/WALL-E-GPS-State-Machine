@@ -202,8 +202,9 @@ void loop() {
   switch (state) {
     case 1:
         Serial.println("State 1!");
-        state = 2;
+        //state = 2;
         // if GPS acquires signal, move on
+        Serial.println(gps_buffer);
         if (buffer_filled) {
           gpsLock = isGpsLocked(gps_buffer);
         }
@@ -439,7 +440,7 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("time string: More than 2 dots counted");
+  // Serial.println("time string: More than 2 dots counted");
         return false;
       }
     }
@@ -472,8 +473,8 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("north coords: More than 2 dots counted");
-	return false;
+  // Serial.println("north coords: More than 2 dots counted");
+  return false;
       }
     }
   }
@@ -500,8 +501,8 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("west coords: More than 2 dots counted");
-	return false;
+  // Serial.println("west coords: More than 2 dots counted");
+  return false;
       }
     }
   }
@@ -560,16 +561,18 @@ void printGpsTimeAndCoords(char string[]) {
       switch (numCommas) {
       case 1:
         // store the gps information into separate variables
-	//          current_time_string 
+  //          current_time_string 
         //cout << string[i];
-        const char* utc = (const char*) string[i];
-        obtained_gps_utc = atol(utc);
-        gps_lock_millis = millis();
+        //const char* utc = (const char*) string[i];
+
+        //THIS IS NEVER USED??? VINCENT?
+        //long obtained_gps_utc = atol(utc);
+        //gps_lock_millis = millis();
         current_gps_buffer.concat(string[i]);
         break;
       case 3:
 //         cout << string[i];
-	north_south_coord = string[i];
+//  north_south_coord = string[i];
         current_gps_buffer.concat(string[i]);
         break;
       case 4:
@@ -580,7 +583,7 @@ void printGpsTimeAndCoords(char string[]) {
         break;
       case 5:
 //         cout << string[i];
-	east_west_coord = string[i];
+//  east_west_coord = string[i];
         current_gps_buffer.concat(string[i]);
         break;
       case 6:
