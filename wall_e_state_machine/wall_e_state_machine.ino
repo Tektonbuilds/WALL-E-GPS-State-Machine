@@ -16,8 +16,9 @@ int getSeconds(char string[]);
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
 int redPin = 2;      // the red LEDs used for synchronizing the two cameras
-int camera = 16; 
+int camera = 16;
 unsigned long time_now = 0; // for our delay in state 5
+unsigned long time_now2 = 0; // for our delay in state 5
 unsigned long previousMillis = 0;        // will store last time LED was updated
 unsigned long gps_lock_millis = 0;
 int gpsLedState = LOW;             // gpsLedState used to set the LED
@@ -52,7 +53,7 @@ int days = 0;
 //Accuracy settings
 int dailyErrorFast = 0; // set the average number of milliseconds your microcontroller's time is fast on a daily basis
 int dailyErrorBehind = 0; // set the average number of milliseconds your microcontroller's time is behind on a daily basis
-int correctedToday = 1; // do not change this variable, one means that the time has already been corrected today for the error in your boards crystal. This is true for the first day because you just set the time when you uploaded the sketch.  
+int correctedToday = 1; // do not change this variable, one means that the time has already been corrected today for the error in your boards crystal. This is true for the first day because you just set the time when you uploaded the sketch.
 
 
 // the follow variables are long's because the time, measured in miliseconds,
@@ -69,6 +70,24 @@ void delayMillis(int time) {
   }
 }
 
+// keeping track of the first delay period
+void delayMillis(int pin, int timeInMs, int state) {
+  if (millis() > (time_now + timeInMs)) {
+    // reset the time_now to reflect the next period
+    time_now = millis();
+    digitalWrite(pin, state);
+  }
+}
+
+// for keeping track of the another delay
+void delayMillis2(int pin, int timeInMs, int state) {
+  if (millis() > (time_now2 + timeInMs)) {
+    // reset the time_now to reflect the next period
+    time_now2 = millis();
+    digitalWrite(pin, state);
+  }
+}
+
 void keepTime() {
   timeNow = millis()/1000; // the number of milliseconds that have passed since boot
   seconds = timeNow - timeLast;//the number of seconds that have passed since the last time 60 seconds was reached.
@@ -77,7 +96,7 @@ void keepTime() {
     minutes = minutes + 1;
   }
   //if one minute has passed, start counting milliseconds from zero again and add one minute to the clock.
-  if (minutes >= 60){ 
+  if (minutes >= 60){
     minutes = 0;
     hours = hours + 1;
   }
@@ -98,8 +117,8 @@ void keepTime() {
   Serial.print(hours);
   Serial.print(":");
   Serial.print(minutes);
-  Serial.print(":"); 
-  Serial.println(seconds); 
+  Serial.print(":");
+  Serial.println(seconds);
 }
 
 
@@ -157,7 +176,7 @@ void setup()
     return;
   }
   Serial.println("initialization done.");
-  
+
   pinMode(buttonPin, INPUT);
   pinMode(gpsLed, OUTPUT);
   pinMode(redPin, OUTPUT);
@@ -180,7 +199,7 @@ void loop() {
       }
     }
   }
-  
+
   switch (state) {
     case 1:
         Serial.println("State 1!");
@@ -191,7 +210,7 @@ void loop() {
         }
         if (gpsLock) {
           state = 2;
-          printGpsInfo(gps_buffer);       
+          printGpsInfo(gps_buffer);
           timeLast = millis()/1000;
           seconds = getSeconds(gps_buffer);
           minutes = getMinutes(gps_buffer);
@@ -218,9 +237,12 @@ void loop() {
           state = 3;
         }
         else {
-          // delayMillis(1000); 
+          // delayMillis(1000);
           // if 1000 ms has passed, change LED state
           // update time_now to current ms.
+
+          // #testedbitch
+          /*
           if (millis() > (time_now + 1000)) {
             time_now = millis();
             if (gpsLedState == LOW) {
@@ -228,15 +250,23 @@ void loop() {
             } else {
               gpsLedState = LOW;
             }
-          } 
+          }
           digitalWrite(gpsLed, gpsLedState);
+          */
+          if (gpsLedState == LOW) {
+            gpsLedState = HIGH;
+          } else {
+            gpsLedState = LOW;
+          }
+          delayMillis(gpsLed, 1000, gpsLedState);
+
         }
         break;
-     case 3: 
+     case 3:
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
         if (gpsLock) {
-            // 
+            //
             writeToSD(current_gps_string);
         }
         else {
@@ -248,14 +278,14 @@ void loop() {
         // start recording (for now, turn on an LED)
         digitalWrite(camera, HIGH);
         // flash the gps led three times quickly to indicate that recording has started
-        for (int i = 0; i < 3; i ++) {   
+        for (int i = 0; i < 3; i ++) {
             digitalWrite(gpsLed, HIGH);
             delayMillis(200);
             digitalWrite(gpsLed, LOW);
             delayMillis(200);
         }
         // flash 5 times
-        for (int i = 0; i < 5; i ++) {   
+        for (int i = 0; i < 5; i ++) {
             digitalWrite(redPin, HIGH);
             delayMillis(500);
             digitalWrite(redPin, LOW);
@@ -263,13 +293,13 @@ void loop() {
         }
         state = 4;
         break;
-     case 4: 
+     case 4:
         Serial.println("State 4: waiting to turn off camera!");
         reading = analogRead(buttonPin);
         if (reading > 150) {
           digitalWrite(camera, LOW);
           // flash the gps led to indicate recording has stopped
-          for (int i = 0; i < 2; i ++) {   
+          for (int i = 0; i < 2; i ++) {
             digitalWrite(gpsLed, HIGH);
             delayMillis(200);
             digitalWrite(gpsLed, LOW);
@@ -343,17 +373,17 @@ void printGpsInfo(char string[]) {
 // Makes sure the character is a dot or a number
 bool isDecimalCharacter(char c) {
   int asciiNum = (int) c;
-  
+
   // 0-9
   if (asciiNum >= 48 && asciiNum <= 57) {
     return true;
   }
-  
+
   // .
   if (asciiNum == 46) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -370,14 +400,14 @@ bool isNotComma(char c) {
 bool isGpsStringValid(char string[]) {
   int i;
   char* gprmc = "$GPRMC";
-  
+
   for (i = 0;; i++) {
     if (string[i] == '\0') {
       // Serial.println("String has end");
       break;
     }
   }
-  
+
   if (i <= 10) {
     // Serial.println("i less than 10");
     return false;
@@ -394,12 +424,12 @@ bool isGpsStringValid(char string[]) {
       break;
     }
   }
-  
+
   if (isNotComma(string[i])) {
     // Serial.println("first comma failed");
     return false;
   }
-  
+
   // Get to the next comma (Contains the time string)
   int dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -416,23 +446,23 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   if (isNotComma(string[i])) {
     // Serial.println("second comma failed");
     return false;
   }
-  
+
   // If it's not GPS-locked just return false
   if (string[++i] != 'A') {
     // Serial.println("not GPS-locked!");
     return false;
   }
-  
+
   if (isNotComma(string[++i])) {
     // Serial.println("third comma failed");
     return false;
   }
-  
+
   // Get to the next comma (North coords)
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -449,17 +479,17 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   if (string[++i] != 'N') {
     // Serial.println("North N not found");
     return false;
   }
-  
+
   if (isNotComma(string[++i])) {
     // Serial.println("fourth comma failed");
     return false;
   }
-  
+
   // Get to the next comma (West coords)
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -476,12 +506,12 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   if (string[++i] != 'W') {
     // Serial.println("West W not found");
     return false;
   }
-  
+
   return true;
 }
 
@@ -490,24 +520,24 @@ bool isGpsStringValid(char string[]) {
 // *** MAKE SURE STRING IS NULL-TERMINATED ***
 void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
-  
+
   for (int i = 0;; i++) {
     if (string[i] == '\0' ) {
       return;
     }
-    
-    if ((numCommas == 1 || numCommas == 3 || numCommas == 5) 
+
+    if ((numCommas == 1 || numCommas == 3 || numCommas == 5)
       && string[i] != ',') {
         if (numCommas == 1) {
-            
+
         }
         Serial.print(string[i]);
         current_gps_buffer.concat(string[i]);
     }
-    
+
     if (string[i] == ',') {
       numCommas++;
-      
+
       switch (numCommas) {
       case 1:
         Serial.print("Time: ");
