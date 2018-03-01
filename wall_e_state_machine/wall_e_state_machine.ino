@@ -60,6 +60,8 @@ int correctedToday = 1; // do not change this variable, one means that the time 
 long time = 0;         // the last time the output pin was toggled
 long debounce = 200;   // the debounce time, increase if the output flickers
 
+
+
 void delayMillis(int time) {
   time_now = millis();
   while (millis() < time_now + time) {
@@ -182,6 +184,7 @@ void loop() {
   switch (state) {
     case 1:
         Serial.println("State 1!");
+        state = 2;
         // if GPS acquires signal, move on
         if (buffer_filled) {
           gpsLock = isGpsLocked(gps_buffer);
@@ -195,6 +198,9 @@ void loop() {
           hours = getHours(gps_buffer);
           memset(&gps_buffer[0], 0, sizeof(gps_buffer));
           buffer_filled = false;
+
+          // start setting the time now to flash later
+          time_now = millis();
         }
         // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
         else if (analogRead(buttonPin) > 150) {
@@ -212,12 +218,17 @@ void loop() {
           state = 3;
         }
         else {
-          delayMillis(1000);    
-          if (gpsLedState == LOW) {
-            gpsLedState = HIGH;
-          } else {
-            gpsLedState = LOW;
-          }
+          // delayMillis(1000); 
+          // if 1000 ms has passed, change LED state
+          // update time_now to current ms.
+          if (millis() > (time_now + 1000)) {
+            time_now = millis();
+            if (gpsLedState == LOW) {
+              gpsLedState = HIGH;
+            } else {
+              gpsLedState = LOW;
+            }
+          } 
           digitalWrite(gpsLed, gpsLedState);
         }
         break;
