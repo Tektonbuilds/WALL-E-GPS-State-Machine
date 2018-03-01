@@ -3,8 +3,7 @@
 #include <Wire.h>
 
 void printGpsInfo(char string[]);
-bool isNumber(char c);
-bool isDecimalPoint(char c);
+bool isDecimalCharacter(char c);
 bool isComma(char c);
 bool isNotComma(char c);
 bool isGpsStringValid(char string[]);
@@ -19,7 +18,10 @@ int gpsLed = 15;       // the led that will flash when the GPS has a signal, als
 int redPin = 2;      // the red LEDs used for synchronizing the two cameras
 int camera = 16; 
 unsigned long time_now = 0; // for our delay in state 5
+unsigned long previousMillis = 0;        // will store last time LED was updated
+unsigned long gps_lock_millis = 0;
 int gpsLedState = LOW;             // gpsLedState used to set the LED
+const long interval = 1000;           // interval at which to blink (milliseconds)
 bool gpsLock;
 // GPS stuff
 int addr = 66;
@@ -38,6 +40,20 @@ int reading;           // the current reading from the input pin
 int previous = LOW;    // the previous reading from the input pin
 int state = 1;         // the possible 4 states are waiting for GPS lock, waiting for button press, recording, and stopping recording
 
+// the following variables are for timekeeping
+unsigned long timeNow = 0;
+unsigned long timeLast = 0;
+//Time start Settings:
+int startingHour = 12; // set your starting hour here, not below at int hour. This ensures accurate daily correction of time
+int seconds = 0;
+int minutes = 52;
+int hours = startingHour;
+int days = 0;
+//Accuracy settings
+int dailyErrorFast = 0; // set the average number of milliseconds your microcontroller's time is fast on a daily basis
+int dailyErrorBehind = 0; // set the average number of milliseconds your microcontroller's time is behind on a daily basis
+int correctedToday = 1; // do not change this variable, one means that the time has already been corrected today for the error in your boards crystal. This is true for the first day because you just set the time when you uploaded the sketch.  
+
 
 // the follow variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
@@ -50,6 +66,41 @@ void delayMillis(int time) {
     delay(0);
   }
 }
+
+void keepTime() {
+  timeNow = millis()/1000; // the number of milliseconds that have passed since boot
+  seconds = timeNow - timeLast;//the number of seconds that have passed since the last time 60 seconds was reached.
+  if (seconds >= 60) {
+    timeLast = timeNow;
+    minutes = minutes + 1;
+  }
+  //if one minute has passed, start counting milliseconds from zero again and add one minute to the clock.
+  if (minutes >= 60){ 
+    minutes = 0;
+    hours = hours + 1;
+  }
+  // if one hour has passed, start counting minutes from zero and add one hour to the clock
+  if (hours >= 24){
+    hours = 0;
+    days = days + 1;
+  }
+  //if 24 hours have passed , add one day
+  if (hours ==(24 - startingHour) && correctedToday == 0){
+    delay(dailyErrorFast*1000);
+    seconds = seconds + dailyErrorBehind;
+    correctedToday = 1;
+  }
+  Serial.print("The time is:           ");
+  Serial.print(days);
+  Serial.print(":");
+  Serial.print(hours);
+  Serial.print(":");
+  Serial.print(minutes);
+  Serial.print(":"); 
+  Serial.println(seconds); 
+}
+
+
 void writeToSD(char timestamp[]) {
   File myFile = SD.open("test.txt", FILE_WRITE);
 
@@ -67,6 +118,7 @@ void writeToSD(char timestamp[]) {
   }
 
   // re-open the file for reading:
+  /*
   myFile = SD.open("test.txt");
   if (myFile) {
     Serial.println("test.txt:");
@@ -81,6 +133,7 @@ void writeToSD(char timestamp[]) {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
+  */
 }
 
 void setup()
@@ -109,8 +162,8 @@ void setup()
   pinMode(camera, OUTPUT);
 }
 
-void loop()
-{
+void loop() {
+  keepTime();
   Wire.requestFrom(addr, num_bytes);    // request 6 bytes from slave device #8
   while (Wire.available()) {
     char c = Wire.read(); // receive a byte
@@ -125,29 +178,31 @@ void loop()
       }
     }
   }
+  
   switch (state) {
     case 1:
         Serial.println("State 1!");
         // if GPS acquires signal, move on
         if (buffer_filled) {
-//          Serial.println(gps_buffer);
           gpsLock = isGpsLocked(gps_buffer);
         }
         if (gpsLock) {
           state = 2;
-          printGpsInfo(gps_buffer);
+          printGpsInfo(gps_buffer);       
+          timeLast = millis()/1000;
+          seconds = getSeconds(gps_buffer);
+          minutes = getMinutes(gps_buffer);
+          hours = getHours(gps_buffer);
           memset(&gps_buffer[0], 0, sizeof(gps_buffer));
           buffer_filled = false;
         }
         // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
-        reading = analogRead(buttonPin);
-        if (reading > 150) {
+        else if (analogRead(buttonPin) > 150) {
           state = 3;
         }
         break;
     case 2:
-//        Serial.println("Numbah 2!!!!");
-        Serial.print("State 2: ");
+        Serial.println("Numbah 2!!!!");
         Serial.println(current_gps_string);
         // led will blink, signaling that the GPS is ready and user can record
         // waiting for button to be pushed
@@ -274,20 +329,21 @@ void printGpsInfo(char string[]) {
   }
 }
 
-// Makes sure the character is a number
-bool isNumber(char c) {
+// Makes sure the character is a dot or a number
+bool isDecimalCharacter(char c) {
   int asciiNum = (int) c;
   
   // 0-9
-  return asciiNum >= 48 && asciiNum <= 57;
-}
-
-// Makes sure the character is a dot
-bool isDecimalPoint(char c) {
-  int asciiNum = (int) c;
+  if (asciiNum >= 48 && asciiNum <= 57) {
+    return true;
+  }
   
   // .
-  return asciiNum == 46;
+  if (asciiNum == 46) {
+    return true;
+  }
+  
+  return false;
 }
 
 bool isComma(char c) {
@@ -319,7 +375,7 @@ bool isGpsStringValid(char string[]) {
   for (i = 0; ; i++) {
     if (gprmc[i] != '\0') {
       if (string[i] != gprmc[i]) {
-        // Serial.println("Does not contain $GPRMC");
+  // Serial.println("Does not contain $GPRMC");
         return false;
       }
     }
@@ -337,14 +393,14 @@ bool isGpsStringValid(char string[]) {
   int dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!(isNumber(c) || isDecimalPoint(c))) {
+    if (!isDecimalCharacter(c)) {
       // Serial.println("time string failed");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("time string: More than 2 dots counted");
+  // Serial.println("time string: More than 2 dots counted");
         return false;
       }
     }
@@ -370,22 +426,21 @@ bool isGpsStringValid(char string[]) {
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!(isNumber(c) || isDecimalPoint(c))) {
+    if (!isDecimalCharacter(c)) {
       // Serial.println("north coords string failed");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("north coords: More than 2 dots counted");
-	return false;
+  // Serial.println("north coords: More than 2 dots counted");
+  return false;
       }
     }
   }
   
-  char ns = string[++i];
-  if (ns != 'N' && ns != 'S') {
-    // Serial.println("North N and South S not found");
+  if (string[++i] != 'N') {
+    // Serial.println("North N not found");
     return false;
   }
   
@@ -398,48 +453,21 @@ bool isGpsStringValid(char string[]) {
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
     char c = string[i];
-    if (!(isNumber(c) || isDecimalPoint(c))) {
+    if (!isDecimalCharacter(c)) {
       // Serial.println("west coords string failed: " + c + " (" + ((int) c) + ")");
       return false;
     }
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("west coords: More than 2 dots counted");
-	return false;
+  // Serial.println("west coords: More than 2 dots counted");
+  return false;
       }
     }
   }
   
-  char we = string[++i];
-  if (we != 'W' && we != 'E') {
-    // Serial.println("West W and East E not found");
-    return false;
-  }
-  
-  // Get to 9th comma
-
-  // 7th comma
-  for (++i; string[i] != ','; i++);
-
-  // 8th comma
-  for (++i; string[i] != ','; i++);
-
-  // 9th comma
-  for (++i; string[i] != ','; i++);
-
-  // Make sure date is all numbers
-  int endIdxExclusive = i + 7;
-  for (++i; i < endIdxExclusive; i++) {
-    char c = string[i];
-    if (!isNumber(c)) {
-      //cout << "Datestamp verification failed." << endl;
-      return false;
-    }
-  }
-  // Make sure next char is a comma
-  if (isNotComma(string[i])) {
-    //cout << "Char after datestamp wasn't a comma." << endl;
+  if (string[++i] != 'W') {
+    // Serial.println("West W not found");
     return false;
   }
   
@@ -453,47 +481,17 @@ void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
   
   for (int i = 0;; i++) {
-    if (string[i] == '\0') {
-      //cout << "\n";
-      current_gps_buffer.concat("\n");
-      current_gps_buffer.toCharArray(current_gps_string, 500);
+    if (string[i] == '\0' ) {
       return;
     }
-
-    // To print North, South, East, and West properly
-    if (string[i] != ',') {
-      switch (numCommas) {
-      case 1:
-        // store the gps information into separate variables
-	//          current_time_string 
-        //cout << string[i];
-        const char* utc = (const char*) string[i];
-        obtained_gps_utc = atol(utc);
-        gps_lock_millis = millis();
+    
+    if ((numCommas == 1 || numCommas == 3 || numCommas == 5) 
+      && string[i] != ',') {
+        if (numCommas == 1) {
+            
+        }
+        Serial.print(string[i]);
         current_gps_buffer.concat(string[i]);
-        break;
-      case 3:
-//         cout << string[i];
-	north_south_coord = string[i];
-        current_gps_buffer.concat(string[i]);
-        break;
-      case 4:
-//         cout << " " << string[i] << ", ";
-        current_gps_buffer.concat(" ");
-        current_gps_buffer.concat(string[i]);
-        current_gps_buffer.concat(", ");
-        break;
-      case 5:
-//         cout << string[i];
-	east_west_coord = string[i];
-        current_gps_buffer.concat(string[i]);
-        break;
-      case 6:
-        //cout << " " << string[i];
-        current_gps_buffer.concat(" ");
-        current_gps_buffer.concat(string[i]);
-        break;
-      }
     }
     
     if (string[i] == ',') {
@@ -501,31 +499,26 @@ void printGpsTimeAndCoords(char string[]) {
       
       switch (numCommas) {
       case 1:
-        //cout << "Time: ";
+        Serial.print("Time: ");
         current_gps_buffer = "Time: ";
         break;
       case 3:
-        //cout << ", ";
+        Serial.print(", ");
         current_gps_buffer.concat(", ");
         break;
-      case 9:
-        //cout << ", Datestamp (DD/MM/YY): ";
-        //cout << string[++i] << string[++i] << "/" << string[++i] << string[++i] << "/" << string[++i] << string[++i];
-        current_gps_buffer.concat(", Datestamp (DD/MM/YY): ");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat("/");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat("/");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
+      case 5:
+        Serial.print(" N, ");
+        current_gps_buffer.concat(" N, ");
         break;
+      case 6:
+        Serial.print(" W\n");
+        current_gps_buffer.concat(" W\n");
+        current_gps_buffer.toCharArray(current_gps_string, 500);
+        return;
       }
     }
   }
 }
-
 int getHours(char string[]) {
   int numCommas = 0;
   int i;
