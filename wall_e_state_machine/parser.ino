@@ -1,3 +1,5 @@
+int debug = 0;
+
 // Returns false if the input is not valid or if the input is not GPS-locked
 bool isGpsLocked(char string[]) {
   int i = 0;
@@ -383,7 +385,6 @@ double getLongitude(char string[]) {
 }
 
 void printToBuffer(char string[]) {
-  int debug = 0;
   if (debug) {
     Serial.print(string);
   }
@@ -393,7 +394,6 @@ void printToBuffer(char string[]) {
 }
 
 void printToBuffer(char c) {
-  int debug = 1;
   if (debug) {
     Serial.print(c);
   }
