@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Wire.h>
+#include "parser.cpp"
 
 void printGpsInfo(char string[]);
 bool isNumber(char c);
