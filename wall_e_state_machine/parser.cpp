@@ -1,3 +1,6 @@
+#IFNDEF PARSER_C
+#DEFINE PARSER_C
+
 #include <iostream>
 #include "parser.h"
 
@@ -406,3 +409,5 @@ void printToBuffer(char c) {
     //current_gps_buffer.concat(c);
   }
 }
+
+#ENDIF
