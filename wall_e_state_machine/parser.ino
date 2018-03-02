@@ -199,7 +199,7 @@ bool isGpsStringValid(char string[]) {
 // *** MAKE SURE STRING IS NULL-TERMINATED ***
 void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
-  // current_gps_buffer = "";
+  current_gps_buffer = "";
   
   for (int i = 0;; i++) {
     if (string[i] == '\0') {
