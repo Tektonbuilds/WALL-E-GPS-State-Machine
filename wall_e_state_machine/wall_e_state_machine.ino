@@ -13,6 +13,8 @@ bool isGpsLocked(char string[]);
 int getHours(char string[]);
 int getMinutes(char string[]);
 int getSeconds(char string[]);
+double getLatitude(char string[]);
+double getLongitude(char string[]);
 
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
@@ -624,7 +626,9 @@ void printGpsTimeAndCoords(char string[]) {
   }
 }
 
-int getHours(char string[]) {
+// Gets the index of section number, which is the char
+// right after the i-th comma
+int getIdxOfSectionNumber(char string[], int sectionNum) {
   int numCommas = 0;
   int i;
   for (i = 0;; i++) {
@@ -632,50 +636,119 @@ int getHours(char string[]) {
       numCommas++;
     }
 
-    if (numCommas == 1) {
-      break;
+    if (numCommas == sectionNum) {
+      return i + 1;
     }
   }
+}
 
-  int tens = string[++i] - '0';
-  int ones = string[++i] - '0';
+// Gets the index of a dot in a section. Returns -1 if not found.
+int getIdxOfPeriodInSection(char string[], int sectionNum) {
+  int i = getIdxOfSectionNumber(string, sectionNum);
+
+  for (;; i++) {
+    if (string[i] == '.') {
+      return i;
+    }
+    else if (string[i] == ',') {
+      return -1;
+    }
+  }
+  return -1;
+}
+
+// x to the power of y, x^y
+int power(int x, int y) {
+  int retval = 1;
+
+  for (int i = 0; i < y; i++) {
+    retval = retval * x;
+  }
+
+  return retval;
+}
+
+// Calculate number according to # of sigfigs. Input has to be sanitized already
+int calcIntFromWithinString(char string[], int sigfigs, int startIdx) {
+  int retval = 0;
+  int currentSigfigs = sigfigs;
+
+  for (int i = startIdx; i < startIdx + sigfigs; i++) {
+    retval += (string[i] - '0') * power(10, currentSigfigs - 1);
+    currentSigfigs--;
+  }
+  return retval;
+}
+
+double getNumberFromSection(char string[], int sectionNum) {
+  int sectionStartIdx = getIdxOfSectionNumber(string, sectionNum);
+  int decimalPointIdx = getIdxOfPeriodInSection(string, sectionNum);
+  int idxOfNextSection = getIdxOfSectionNumber(string, sectionNum + 1);
+
+  // If no decimal point
+  if (decimalPointIdx == -1) {
+    int sigfigs = (idxOfNextSection - 2) - (sectionStartIdx) + 1;
+    
+    return (double) calcIntFromWithinString(string, sigfigs, sectionStartIdx);
+  }
+  // If decimal point exists
+  else {
+    double retval = 0;
+    retval += calcIntFromWithinString(string, decimalPointIdx - sectionStartIdx, sectionStartIdx);
+    
+    double multiplicant = 0.1;
+    double decimalPart = 0;
+    for (int i = decimalPointIdx + 1; i < idxOfNextSection - 1; i++) {
+      decimalPart += (string[i] - '0') * multiplicant;
+      multiplicant /= 10;
+    }
+
+    return retval + decimalPart;
+  }
+}
+
+int getHours(char string[]) {
+  int timestampIdx = getIdxOfSectionNumber(string, 1);
+
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
   return tens * 10 + ones;
 }
 
 int getMinutes(char string[]) {
-  int numCommas = 0;
-  int i;
-  for (i = 0;; i++) {
-    if (string[i] == ',') {
-      numCommas++;
-    }
+  int timestampIdx = getIdxOfSectionNumber(string, 1);
 
-    if (numCommas == 1) {
-      break;
-    }
-  }
-
-  i += 2;
-  int tens = string[++i] - '0';
-  int ones = string[++i] - '0';
+  timestampIdx += 2;
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
   return tens * 10 + ones;
 }
 
 int getSeconds(char string[]) {
-  int numCommas = 0;
-  int i;
-  for (i = 0;; i++) {
-    if (string[i] == ',') {
-      numCommas++;
-    }
+  int timestampIdx = getIdxOfSectionNumber(string, 1);
 
-    if (numCommas == 1) {
-      break;
-    }
-  }
-
-  i += 4;
-  int tens = string[++i] - '0';
-  int ones = string[++i] - '0';
+  timestampIdx += 4;
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
   return tens * 10 + ones;
+}
+
+// Latitude is NS (N - positive, S - negative)
+double getLatitude(char string[]) {
+  double latitude = getNumberFromSection(string, 3);
+  
+  if (string[getIdxOfSectionNumber(string, 4)] == 'S') {
+    latitude *= -1;
+  }
+  return latitude;
+}
+
+// Longitude is WE (E - positive, W - negative)
+double getLongitude(char string[]) {
+  double longitude = getNumberFromSection(string, 5);
+  
+  if (string[getIdxOfSectionNumber(string, 6)] == 'W') {
+    longitude *= -1;
+  }
+  return longitude;
 }
