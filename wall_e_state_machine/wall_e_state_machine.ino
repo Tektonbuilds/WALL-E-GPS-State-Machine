@@ -28,6 +28,8 @@ String current_gps_buffer;
 char current_gps_string[500];
 String gps_no_lock_buffer;
 char gps_no_lock_string[500];
+double latitude;
+double longitude;
 
 int reading;           // the current reading from the input pin
 int previous = LOW;    // the previous reading from the input pin
@@ -171,10 +173,8 @@ void setup()
   pinMode(gpsLed, OUTPUT);
   pinMode(redPin, OUTPUT);
   pinMode(camera, OUTPUT);
-  //printGpsInfo("$GPRMC,220516,A,5133.82,N,00042.24,W,173.8,231.8,130694,004.2,W*70");
-  Serial.println(getLatitude("$GPRMC,220516,A,5133.82,N,00042.24,W,173.8,231.8,130694,004.2,W*70"));
-  Serial.println(getLongitude("$GPRMC,220516,A,5133.82,N,00042.24,W,173.8,231.8,130694,004.2,W*70"));
 }
+
 void loop() {
   keepTime();
   Wire.requestFrom(addr, num_bytes);    // request 6 bytes from slave device #8
@@ -191,7 +191,11 @@ void loop() {
       }
     }
   }
-
+  // keep updating coords to get most recent location
+  if (buffer_filled && isGpsLocked(gps_buffer)) {
+    latitude = getLatitude(gps_buffer);
+    longitude = getLongitude(gps_buffer);
+  }
   switch (state) {
     case 1:
         Serial.println("State 1!");
