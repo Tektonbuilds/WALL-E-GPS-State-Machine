@@ -1,3 +1,6 @@
+#IFNDEF PARSER_C
+#DEFINE PARSER_C
+
 #include <iostream>
 
 using namespace std;
@@ -421,3 +424,5 @@ void printToBuffer(char c) {
     //current_gps_buffer.concat(c);
   }
 }
+
+#ENDIF
