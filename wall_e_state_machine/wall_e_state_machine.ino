@@ -175,7 +175,169 @@ void setup()
   Serial.println(getLatitude("$GPRMC,220516,A,5133.82,N,00042.24,W,173.8,231.8,130694,004.2,W*70"));
   Serial.println(getLongitude("$GPRMC,220516,A,5133.82,N,00042.24,W,173.8,231.8,130694,004.2,W*70"));
 }
-void loop () {
-  
+void loop() {
+  keepTime();
+  Wire.requestFrom(addr, num_bytes);    // request 6 bytes from slave device #8
+  while (Wire.available()) {
+    char c = Wire.read(); // receive a byte
+    if (c != (char)0xff) {
+      if (c == '\r' || c == '\n') {
+        buffer_filled = true;
+        buf.toCharArray(gps_buffer, 500);
+        buf = "";
+        break;
+      } else {
+        buf.concat(c);
+      }
+    }
+  }
+
+  switch (state) {
+    case 1:
+        Serial.println("State 1!");
+        //state = 2;
+        // if GPS acquires signal, move on
+        Serial.println(gps_buffer);
+        if (buffer_filled) {
+          gpsLock = isGpsLocked(gps_buffer);
+        }
+        if (gpsLock) {
+          state = 2;
+          printGpsInfo(gps_buffer);
+          timeLast = millis()/1000;
+          seconds = getSeconds(gps_buffer);
+          minutes = getMinutes(gps_buffer);
+          hours = getHours(gps_buffer);
+          memset(&gps_buffer[0], 0, sizeof(gps_buffer));
+          buffer_filled = false;
+
+          // start setting the time now to flash later
+          time_now = millis();
+        }
+        // if the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
+        else if (analogRead(buttonPin) > 150) {
+          state = 3;
+        }
+        break;
+    case 2:
+        Serial.println("Numbah 2!!!!");
+        Serial.println(current_gps_string);
+        // led will blink, signaling that the GPS is ready and user can record
+        // waiting for button to be pushed
+        reading = analogRead(buttonPin);
+        if (reading > 150) {
+          digitalWrite(gpsLed, LOW);
+          state = 3;
+        }
+        else {
+          // delayMillis(1000);
+          // if 1000 ms has passed, change LED state
+          // update time_now to current ms.
+
+          // #testedbitch
+          /*
+          if (millis() > (time_now + 1000)) {
+            time_now = millis();
+            if (gpsLedState == LOW) {
+              gpsLedState = HIGH;
+            } else {
+              gpsLedState = LOW;
+            }
+          }
+          digitalWrite(gpsLed, gpsLedState);
+          */
+          if (gpsLedState == LOW) {
+            gpsLedState = HIGH;
+          } else {
+            gpsLedState = LOW;
+          }
+          delayMillis(gpsLed, 1000, gpsLedState);
+
+        }
+        break;
+     case 3:
+        Serial.println("made it to case 3!");
+//        String time = "TIME!";
+        if (gpsLock) {
+            //
+            writeToSD(current_gps_string);
+        }
+        else {
+           gps_no_lock_buffer = "GPS did not acquire a lock, and button override was used.\n";
+           gps_no_lock_buffer.toCharArray(gps_no_lock_string, 500);
+           writeToSD(gps_no_lock_string);
+        }
+        // write to the SD card with the time and GPS coords
+        // start recording (for now, turn on an LED)
+        digitalWrite(camera, HIGH);
+        // flash the gps led three times quickly to indicate that recording has started
+        for (int i = 0; i < 3; i ++) {
+            digitalWrite(gpsLed, HIGH);
+            delayMillis(200);
+            digitalWrite(gpsLed, LOW);
+            delayMillis(200);
+        }
+        // flash 5 times
+        for (int i = 0; i < 5; i ++) {
+            digitalWrite(redPin, HIGH);
+            delayMillis(500);
+            digitalWrite(redPin, LOW);
+            delayMillis(1000);
+        }
+        state = 4;
+        break;
+     case 4:
+        Serial.println("State 4: waiting to turn off camera!");
+        reading = analogRead(buttonPin);
+        if (reading > 150) {
+          digitalWrite(camera, LOW);
+          // flash the gps led to indicate recording has stopped
+          for (int i = 0; i < 2; i ++) {
+            digitalWrite(gpsLed, HIGH);
+            delayMillis(200);
+            digitalWrite(gpsLed, LOW);
+            delayMillis(200);
+          }
+          state = 5;
+        }
+        break;
+     case 5:
+        Serial.println("Yay we're home! Let's go back to state 1.");
+        delayMillis(500);
+        state = 1;
+        break;
+  }
 }
+
+//writeToSD(String time) {
+//  myFile = SD.open("test.txt", FILE_WRITE);
+//
+//  // if the file opened okay, write to it:
+//  if (myFile) {
+//    Serial.print("Writing to test.txt...");
+//    myFile.println("testing 1, 2, 3.");
+//    // close the file:
+//    myFile.close();
+//    Serial.println("done.");
+//  } else {
+//    // if the file didn't open, print an error:
+//    Serial.println("error opening test.txt");
+//  }
+//
+//  // re-open the file for reading:
+//  myFile = SD.open("test.txt");
+//  if (myFile) {
+//    Serial.println("test.txt:");
+//
+//    // read from the file until there's nothing else in it:
+//    while (myFile.available()) {
+//      Serial.write(myFile.read());
+//    }
+//    // close the file:
+//    myFile.close();
+//  } else {
+//    // if the file didn't open, print an error:
+//    Serial.println("error opening test.txt");
+//  }
+//}
 
