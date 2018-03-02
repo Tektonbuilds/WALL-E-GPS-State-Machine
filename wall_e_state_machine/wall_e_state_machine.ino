@@ -1,9 +1,6 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Wire.h>
-//#include <iostream>
-//using namespace std;
-//#include "parser.h"
 
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
