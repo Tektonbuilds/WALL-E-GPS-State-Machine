@@ -1,8 +1,3 @@
-#include <iostream>
-#include "parser.h"
-
-using namespace std;
-
 // Returns false if the input is not valid or if the input is not GPS-locked
 bool isGpsLocked(char string[]) {
   int i = 0;
@@ -70,7 +65,7 @@ bool isGpsStringValid(char string[]) {
   for (i = 0; ; i++) {
     if (gprmc[i] != '\0') {
       if (string[i] != gprmc[i]) {
-	// Serial.println("Does not contain $GPRMC");
+  // Serial.println("Does not contain $GPRMC");
         return false;
       }
     }
@@ -95,7 +90,7 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("time string: More than 2 dots counted");
+  // Serial.println("time string: More than 2 dots counted");
         return false;
       }
     }
@@ -128,8 +123,8 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("north coords: More than 2 dots counted");
-	return false;
+  // Serial.println("north coords: More than 2 dots counted");
+  return false;
       }
     }
   }
@@ -156,8 +151,8 @@ bool isGpsStringValid(char string[]) {
     if (c == '.') {
       dotCount++;
       if (dotCount == 2) {
-	// Serial.println("west coords: More than 2 dots counted");
-	return false;
+  // Serial.println("west coords: More than 2 dots counted");
+  return false;
       }
     }
   }
@@ -390,7 +385,7 @@ double getLongitude(char string[]) {
 void printToBuffer(char string[]) {
   int debug = 1;
   if (debug) {
-    cout << string;
+    Serial.println(string);
   }
   else {
     //current_gps_buffer.concat(string);
@@ -400,7 +395,7 @@ void printToBuffer(char string[]) {
 void printToBuffer(char c) {
   int debug = 1;
   if (debug) {
-    cout << c;
+    Serial.println(c);
   }
   else {
     //current_gps_buffer.concat(c);
