@@ -383,21 +383,21 @@ double getLongitude(char string[]) {
 }
 
 void printToBuffer(char string[]) {
-  int debug = 1;
+  int debug = 0;
   if (debug) {
-    Serial.println(string);
+    Serial.print(string);
   }
   else {
-    //current_gps_buffer.concat(string);
+    current_gps_buffer.concat(string);
   }
 }
 
 void printToBuffer(char c) {
   int debug = 1;
   if (debug) {
-    Serial.println(c);
+    Serial.print(c);
   }
   else {
-    //current_gps_buffer.concat(c);
+    current_gps_buffer.concat(c);
   }
 }
