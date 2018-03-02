@@ -15,6 +15,8 @@ int getMinutes(char string[]);
 int getSeconds(char string[]);
 double getLatitude(char string[]);
 double getLongitude(char string[]);
+void printToBuffer(char string[]);
+void printToBuffer(char c);
 
 int buttonPin = A0;         // the number of the input pin
 int gpsLed = 15;       // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
@@ -549,12 +551,11 @@ bool isGpsStringValid(char string[]) {
 // *** MAKE SURE STRING IS NULL-TERMINATED ***
 void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
+  current_gps_buffer = "";
 
   for (int i = 0;; i++) {
     if (string[i] == '\0') {
-      //cout << "\n";
-      current_gps_buffer.concat("\n");
-      current_gps_buffer.toCharArray(current_gps_string, 500);
+      printToBuffer("\n");
       return;
     }
 
@@ -562,36 +563,22 @@ void printGpsTimeAndCoords(char string[]) {
     if (string[i] != ',') {
       switch (numCommas) {
       case 1:
-        // store the gps information into separate variables
-  //          current_time_string 
-        //cout << string[i];
-        //const char* utc = (const char*) string[i];
-
-        //THIS IS NEVER USED??? VINCENT?
-        //long obtained_gps_utc = atol(utc);
-        //gps_lock_millis = millis();
-        current_gps_buffer.concat(string[i]);
+        printToBuffer(string[i]);
         break;
       case 3:
-//         cout << string[i];
-//  north_south_coord = string[i];
-        current_gps_buffer.concat(string[i]);
+        printToBuffer(string[i]);
         break;
       case 4:
-//         cout << " " << string[i] << ", ";
-        current_gps_buffer.concat(" ");
-        current_gps_buffer.concat(string[i]);
-        current_gps_buffer.concat(", ");
+        printToBuffer(" ");
+        printToBuffer(string[i]);
+        printToBuffer(", ");
         break;
       case 5:
-//         cout << string[i];
-//  east_west_coord = string[i];
-        current_gps_buffer.concat(string[i]);
+        printToBuffer(string[i]);
         break;
       case 6:
-        //cout << " " << string[i];
-        current_gps_buffer.concat(" ");
-        current_gps_buffer.concat(string[i]);
+        printToBuffer(" ");
+        printToBuffer(string[i]);
         break;
       }
     }
@@ -601,25 +588,21 @@ void printGpsTimeAndCoords(char string[]) {
       
       switch (numCommas) {
       case 1:
-        //cout << "Time: ";
-        current_gps_buffer = "Time: ";
+        printToBuffer("Time: ");
         break;
       case 3:
-        //cout << ", ";
-        current_gps_buffer.concat(", ");
+        printToBuffer(", ");
         break;
       case 9:
-        //cout << ", Datestamp (DD/MM/YY): ";
-        //cout << string[++i] << string[++i] << "/" << string[++i] << string[++i] << "/" << string[++i] << string[++i];
-        current_gps_buffer.concat(", Datestamp (DD/MM/YY): ");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat("/");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat("/");
-        current_gps_buffer.concat(string[++i]);
-        current_gps_buffer.concat(string[++i]);
+        printToBuffer(", Datestamp (DD/MM/YY): ");
+        printToBuffer(string[++i]);
+        printToBuffer(string[++i]);
+        printToBuffer("/");
+        printToBuffer(string[++i]);
+        printToBuffer(string[++i]);
+        printToBuffer("/");
+        printToBuffer(string[++i]);
+        printToBuffer(string[++i]);
         break;
       }
     }
@@ -751,4 +734,24 @@ double getLongitude(char string[]) {
     longitude *= -1;
   }
   return longitude;
+}
+
+void printToBuffer(char string[]) {
+  int debug = 1;
+  if (debug) {
+    cout << string;
+  }
+  else {
+    //current_gps_buffer.concat(string);
+  }
+}
+
+void printToBuffer(char c) {
+  int debug = 1;
+  if (debug) {
+    cout << c;
+  }
+  else {
+    //current_gps_buffer.concat(c);
+  }
 }
