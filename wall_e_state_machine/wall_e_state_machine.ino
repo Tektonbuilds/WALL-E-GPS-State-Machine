@@ -111,14 +111,14 @@ void keepTime() {
 }
 
 
-void writeToSD(char timestamp[]) {
+void writeToSD(char buffer[]) {
   File myFile = SD.open("test.txt", FILE_WRITE);
 
   // if the file opened okay, write to it:
   if (myFile) {
     Serial.print("Writing to test.txt...");
 //    myFile.println("testing 1, 2, 3.");
-  myFile.println(timestamp);
+    myFile.println(buffer);
     // close the file:
     myFile.close();
     Serial.println("done.");
@@ -341,4 +341,3 @@ void loop() {
 //    Serial.println("error opening test.txt");
 //  }
 //}
-

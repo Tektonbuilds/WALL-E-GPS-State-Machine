@@ -25,7 +25,7 @@ void printGpsInfo(char string[]) {
 // Makes sure the character is a number
 bool isNumber(char c) {
   int asciiNum = (int) c;
-  
+
   // 0-9
   return asciiNum >= 48 && asciiNum <= 57;
 }
@@ -33,7 +33,7 @@ bool isNumber(char c) {
 // Makes sure the character is a dot
 bool isDecimalPoint(char c) {
   int asciiNum = (int) c;
-  
+
   // .
   return asciiNum == 46;
 }
@@ -51,14 +51,14 @@ bool isNotComma(char c) {
 bool isGpsStringValid(char string[]) {
   int i;
   char* gprmc = "$GPRMC";
-  
+
   for (i = 0;; i++) {
     if (string[i] == '\0') {
       // Serial.println("String has end");
       break;
     }
   }
-  
+
   if (i <= 10) {
     // Serial.println("i less than 10");
     return false;
@@ -75,12 +75,12 @@ bool isGpsStringValid(char string[]) {
       break;
     }
   }
-  
+
   if (isNotComma(string[i])) {
     // Serial.println("first comma failed");
     return false;
   }
-  
+
   // Get to the next comma (Contains the time string)
   int dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -97,23 +97,23 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   if (isNotComma(string[i])) {
     // Serial.println("second comma failed");
     return false;
   }
-  
+
   // If it's not GPS-locked just return false
   if (string[++i] != 'A') {
     // Serial.println("not GPS-locked!");
     return false;
   }
-  
+
   if (isNotComma(string[++i])) {
     // Serial.println("third comma failed");
     return false;
   }
-  
+
   // Get to the next comma (North coords)
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -130,18 +130,18 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   char ns = string[++i];
   if (ns != 'N' && ns != 'S') {
     // Serial.println("North N and South S not found");
     return false;
   }
-  
+
   if (isNotComma(string[++i])) {
     // Serial.println("fourth comma failed");
     return false;
   }
-  
+
   // Get to the next comma (West coords)
   dotCount = 0;
   for (++i; string[i] != ','; i++) {
@@ -158,13 +158,13 @@ bool isGpsStringValid(char string[]) {
       }
     }
   }
-  
+
   char we = string[++i];
   if (we != 'W' && we != 'E') {
     // Serial.println("West W and East E not found");
     return false;
   }
-  
+
   // Get to 9th comma
 
   // 7th comma
@@ -190,7 +190,7 @@ bool isGpsStringValid(char string[]) {
     //cout << "Char after datestamp wasn't a comma." << endl;
     return false;
   }
-  
+
   return true;
 }
 
@@ -200,7 +200,7 @@ bool isGpsStringValid(char string[]) {
 void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
   current_gps_buffer = "";
-  
+
   for (int i = 0;; i++) {
     if (string[i] == '\0') {
       printToBuffer("\n");
@@ -230,10 +230,10 @@ void printGpsTimeAndCoords(char string[]) {
         break;
       }
     }
-    
+
     if (string[i] == ',') {
       numCommas++;
-      
+
       switch (numCommas) {
       case 1:
         printToBuffer("Time: ");
@@ -319,14 +319,14 @@ double getNumberFromSection(char string[], int sectionNum) {
   // If no decimal point
   if (decimalPointIdx == -1) {
     int sigfigs = (idxOfNextSection - 2) - (sectionStartIdx) + 1;
-    
+
     return (double) calcIntFromWithinString(string, sigfigs, sectionStartIdx);
   }
   // If decimal point exists
   else {
     double retval = 0;
     retval += calcIntFromWithinString(string, decimalPointIdx - sectionStartIdx, sectionStartIdx);
-    
+
     double multiplicant = 0.1;
     double decimalPart = 0;
     for (int i = decimalPointIdx + 1; i < idxOfNextSection - 1; i++) {
@@ -367,7 +367,7 @@ int getSeconds(char string[]) {
 // Latitude is NS (N - positive, S - negative)
 double getLatitude(char string[]) {
   double latitude = getNumberFromSection(string, 3);
-  
+
   if (string[getIdxOfSectionNumber(string, 4)] == 'S') {
     latitude *= -1;
   }
@@ -377,7 +377,7 @@ double getLatitude(char string[]) {
 // Longitude is WE (E - positive, W - negative)
 double getLongitude(char string[]) {
   double longitude = getNumberFromSection(string, 5);
-  
+
   if (string[getIdxOfSectionNumber(string, 6)] == 'W') {
     longitude *= -1;
   }
@@ -403,4 +403,3 @@ void printToBuffer(char c) {
     current_gps_buffer.concat(c);
   }
 }
-
