@@ -137,7 +137,6 @@ void writeToSD(char buffer[]) {
 }
 
 void updateGPSCharArray(){
-  // TODO: format the string buffer to match parser format
   String temp = "Started recording on ";
   temp.concat(month);
   temp.concat("/");
@@ -164,6 +163,7 @@ void updateGPSCharArray(){
   } else { // West
     temp.concat(",W, ");
   }
+  temp.toCharArray(current_gps_buffer, 500);
 }
 
 void setup()
