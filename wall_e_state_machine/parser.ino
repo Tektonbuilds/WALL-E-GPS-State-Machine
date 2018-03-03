@@ -195,7 +195,7 @@ bool isGpsStringValid(char string[]) {
 }
 
 // Prints the time and stuff in this format:
-//    "Time: {time}, {latitude} N, {longitude} W"
+//    "Time: {time}, {latitude} N, {longitude} W, Datestamp (DD/MM/YY): {datestamp}"
 // *** MAKE SURE STRING IS NULL-TERMINATED ***
 void printGpsTimeAndCoords(char string[]) {
   int numCommas = 0;
@@ -251,6 +251,7 @@ void printGpsTimeAndCoords(char string[]) {
         printToBuffer("/");
         printToBuffer(string[++i]);
         printToBuffer(string[++i]);
+        bufferToString(current_gps_buffer);
         break;
       }
     }
@@ -338,6 +339,33 @@ double getNumberFromSection(char string[], int sectionNum) {
   }
 }
 
+//======================UNTESTED======================
+int getMonth(char string[]) {
+  int timestampIdx = getIdxOfSectionNumber(string, 9);
+
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
+  return tens * 10 + ones;
+}
+
+int getDay(char string[]) {
+  int timestampIdx = getIdxOfSectionNumber(string, 9);
+
+  timestampIdx += 2;
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
+  return tens * 10 + ones;
+}
+
+int getYear(char string[]) {
+  int timestampIdx = getIdxOfSectionNumber(string, 9);
+
+  timestampIdx += 4;
+  int tens = string[timestampIdx] - '0';
+  int ones = string[timestampIdx + 1] - '0';
+  return tens * 10 + ones;
+}
+
 int getHours(char string[]) {
   int timestampIdx = getIdxOfSectionNumber(string, 1);
 
@@ -345,6 +373,7 @@ int getHours(char string[]) {
   int ones = string[timestampIdx + 1] - '0';
   return tens * 10 + ones;
 }
+//======================UNTESTED======================
 
 int getMinutes(char string[]) {
   int timestampIdx = getIdxOfSectionNumber(string, 1);
@@ -401,5 +430,15 @@ void printToBuffer(char c) {
   }
   else {
     current_gps_buffer.concat(c);
+  }
+}
+
+// Once the current_gps_buffer is filled with information
+// fill current_gps_string with the buffer
+void bufferToString(String buffer) {
+  buffer.toCharArray(current_gps_string, 500);
+  if (debug) {
+    Serial.print("Converting buffer to string: ")
+    Serial.println(current_gps_string);
   }
 }

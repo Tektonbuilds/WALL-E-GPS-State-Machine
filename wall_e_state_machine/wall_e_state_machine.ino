@@ -41,6 +41,10 @@ int seconds = 0;
 int minutes = 52;
 int hours = startingHour;
 int days = 0;
+//Date start Settings:
+int month = 0;
+int day = 0;
+int year = 0;
 //Accuracy settings
 int dailyErrorFast = 0; // set the average number of milliseconds your microcontroller's time is fast on a daily basis
 int dailyErrorBehind = 0; // set the average number of milliseconds your microcontroller's time is behind on a daily basis
@@ -93,6 +97,10 @@ void keepTime() {
   if (hours >= 24){
     hours = 0;
     days = days + 1;
+    //======================UNTESTED======================
+    // TODO: account for change in month?
+    day = day + 1;
+    //======================UNTESTED======================
   }
   //if 24 hours have passed , add one day
   if (hours ==(24 - startingHour) && correctedToday == 0){
@@ -126,24 +134,12 @@ void writeToSD(char buffer[]) {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
+}
 
-  // re-open the file for reading:
-  /*
-  myFile = SD.open("test.txt");
-  if (myFile) {
-    Serial.println("test.txt:");
-
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    // close the file:
-    myFile.close();
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
-  */
+void updateGPSCharArray(){
+  // TODO: format the string buffer to match parser format
+  String temp = "Time: ";
+  temp.concat();
 }
 
 void setup()
@@ -209,6 +205,11 @@ void loop() {
           seconds = getSeconds(gps_buffer);
           minutes = getMinutes(gps_buffer);
           hours = getHours(gps_buffer);
+          //======================UNTESTED======================
+          month   = getMonth(gps_buffer);
+          day     = getDay(gps_buffer);
+          getYear = getYear(gps_buffer);
+          //======================UNTESTED======================
           memset(&gps_buffer[0], 0, sizeof(gps_buffer));
           buffer_filled = false;
 
@@ -260,7 +261,6 @@ void loop() {
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
         if (gpsLock) {
-            //
             writeToSD(current_gps_string);
         }
         else {
