@@ -120,7 +120,9 @@ void keepTime() {
 
 
 void writeToSD(char buffer[]) {
-  File myFile = SD.open("test.txt", FILE_WRITE);
+  // File myFile = SD.open("test.txt", FILE_WRITE);
+  // TODO: MAKE SURE THIS FILE EXISTS ON THE SD CARD
+  File myFile = SD.open("GPSRecordInfo.txt", FILE_WRITE);
 
   // if the file opened okay, write to it:
   if (myFile) {
@@ -318,7 +320,8 @@ void loop() {
         Serial.println("made it to case 3!");
 //        String time = "TIME!";
         if (gpsLock) {
-            writeToSD(current_gps_string);
+          updateGPSCharArray();
+          writeToSD(current_gps_string);
         }
         else {
            gps_no_lock_buffer = "GPS did not acquire a lock, and button override was used.\n";
