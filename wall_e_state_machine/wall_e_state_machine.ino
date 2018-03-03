@@ -138,8 +138,32 @@ void writeToSD(char buffer[]) {
 
 void updateGPSCharArray(){
   // TODO: format the string buffer to match parser format
-  String temp = "Time: ";
-  temp.concat();
+  String temp = "Started recording on ";
+  temp.concat(month);
+  temp.concat("/");
+  temp.concat(day);
+  temp.concat("/");
+  temp.concat(year);
+  temp.concat(" at ")
+  temp.concat(hours);
+  temp.concat(":");
+  temp.concat(minutes);
+  temp.concat(":");
+  temp.concat(seconds);
+  temp.concat(", at Latitude: ");
+  temp.concat(abs(latitude));
+  if (latitude < 0) { // North
+    temp.concat(",N, ");
+  } else { // South
+    temp.concat(",S, ");
+  }
+  temp.concat(", at Longitude: ");
+  temp.concat(abs(longitude));
+  if (latitude < 0) { // East
+    temp.concat(",E, ");
+  } else { // West
+    temp.concat(",W, ");
+  }
 }
 
 void setup()
