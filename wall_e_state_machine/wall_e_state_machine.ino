@@ -137,6 +137,9 @@ void writeToSD(char buffer[]) {
 }
 
 void updateGPSCharArray(){
+  if (debug) {
+    printLatestGPSInfo();
+  }
   String temp = "Started recording on ";
   temp.concat(month);
   temp.concat("/");
@@ -164,6 +167,36 @@ void updateGPSCharArray(){
     temp.concat(",W, ");
   }
   temp.toCharArray(current_gps_buffer, 500);
+}
+
+// use this for debugging
+void printLatestGPSInfo() {
+  Serial.print("Started recording on ");
+  Serial.print(month);
+  Serial.print("/");
+  Serial.print(day);
+  Serial.print("/");
+  Serial.print(year);
+  Serial.print(" at ")
+  Serial.print(hours);
+  Serial.print(":");
+  Serial.print(minutes);
+  Serial.print(":");
+  Serial.print(seconds);
+  Serial.print(", at Latitude: ");
+  Serial.print(abs(latitude));
+  if (latitude < 0) { // North
+    Serial.print(",N, ");
+  } else { // South
+    Serial.print(",S, ");
+  }
+  Serial.print(", at Longitude: ");
+  Serial.print(abs(longitude));
+  if (latitude < 0) { // East
+    Serial.println(",E, ");
+  } else { // West
+    Serial.println(",W, ");
+  }
 }
 
 void setup()
