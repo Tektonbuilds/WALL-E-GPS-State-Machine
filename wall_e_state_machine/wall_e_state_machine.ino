@@ -102,6 +102,25 @@ void keepTime() {
     day = day + 1;
     //======================UNTESTED======================
   }
+
+  //======================UNTESTED======================
+  // account for going over to the next month
+  // uncomment when the testing is done to test this too
+  // int months[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  // if (days == 1) {
+  //   if ((day + 1) > months[month-1]) {
+  //     if (month == 12) {
+  //       month = 1;
+  //     } else {
+  //       month = month + 1;
+  //     }
+  //     day = 1
+  //   } else {
+  //     day = day + 1;
+  //   }
+  // }
+  //======================UNTESTED======================
+
   //if 24 hours have passed , add one day
   if (hours ==(24 - startingHour) && correctedToday == 0){
     delay(dailyErrorFast*1000);
