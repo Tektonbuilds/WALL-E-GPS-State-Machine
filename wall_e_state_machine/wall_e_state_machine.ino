@@ -209,16 +209,16 @@ void printLatestGPSInfo() {
   Serial.print(seconds);
   Serial.print(", at Latitude: ");
   Serial.print(abs(latitude));
-  if (latitude < 0) { // North
-    Serial.print(",N, ");
-  } else { // South
+  if (latitude < 0) { // South
     Serial.print(",S, ");
+  } else { // North
+    Serial.print(",N, ");
   }
   Serial.print("at Longitude: ");
   Serial.print(abs(longitude));
-  if (latitude < 0) { // East
+  if (latitude < 0) { // West
     Serial.println(",E, ");
-  } else { // West
+  } else { // East
     Serial.println(",W, ");
   }
 }
