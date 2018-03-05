@@ -438,7 +438,7 @@ void printToBuffer(char c) {
 void bufferToString(String buffer) {
   buffer.toCharArray(current_gps_string, 500);
   if (debug) {
-    Serial.print("Converting buffer to string: ")
+    Serial.print("Converting buffer to string: ");
     Serial.println(current_gps_string);
   }
 }

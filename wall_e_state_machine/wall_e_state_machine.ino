@@ -141,23 +141,26 @@ void keepTime() {
 void writeToSD(char buffer[]) {
   // File myFile = SD.open("test.txt", FILE_WRITE);
   // TODO: MAKE SURE THIS FILE EXISTS ON THE SD CARD
-  File myFile = SD.open("GPSRecordInfo.txt", FILE_WRITE);
+//  File myFile = SD.open("GPSRecordInfo.txt", FILE_WRITE);
+  File myFile = SD.open("test.txt", FILE_WRITE);
 
   // if the file opened okay, write to it:
   if (myFile) {
-    Serial.print("Writing to test.txt...");
+    Serial.print("Writing to GPSRecordInfo.txt...");
 //    myFile.println("testing 1, 2, 3.");
+    Serial.println(buffer);
     myFile.println(buffer);
     // close the file:
     myFile.close();
     Serial.println("done.");
   } else {
     // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
+    Serial.println("error opening GPSRecordInfo.txt");
   }
 }
 
 void updateGPSCharArray(){
+  int debug = 1;
   if (debug) {
     printLatestGPSInfo();
   }
@@ -167,7 +170,7 @@ void updateGPSCharArray(){
   temp.concat(day);
   temp.concat("/");
   temp.concat(year);
-  temp.concat(" at ")
+  temp.concat(" at ");
   temp.concat(hours);
   temp.concat(":");
   temp.concat(minutes);
@@ -180,14 +183,14 @@ void updateGPSCharArray(){
   } else { // South
     temp.concat(",S, ");
   }
-  temp.concat(", at Longitude: ");
+  temp.concat("at Longitude: ");
   temp.concat(abs(longitude));
   if (latitude < 0) { // East
     temp.concat(",E, ");
   } else { // West
     temp.concat(",W, ");
   }
-  temp.toCharArray(current_gps_buffer, 500);
+  temp.toCharArray(current_gps_string, 500);
 }
 
 // use this for debugging
@@ -198,7 +201,7 @@ void printLatestGPSInfo() {
   Serial.print(day);
   Serial.print("/");
   Serial.print(year);
-  Serial.print(" at ")
+  Serial.print(" at ");
   Serial.print(hours);
   Serial.print(":");
   Serial.print(minutes);
@@ -211,7 +214,7 @@ void printLatestGPSInfo() {
   } else { // South
     Serial.print(",S, ");
   }
-  Serial.print(", at Longitude: ");
+  Serial.print("at Longitude: ");
   Serial.print(abs(longitude));
   if (latitude < 0) { // East
     Serial.println(",E, ");
@@ -263,6 +266,7 @@ void loop() {
     }
   }
   // keep updating coords to get most recent location
+  // TODO: We need keep track of already finding a GPS lock and ignoring this condition
   if (buffer_filled && isGpsLocked(gps_buffer)) {
     latitude = getLatitude(gps_buffer);
     longitude = getLongitude(gps_buffer);
@@ -286,7 +290,7 @@ void loop() {
           //======================UNTESTED======================
           month   = getMonth(gps_buffer);
           day     = getDay(gps_buffer);
-          getYear = getYear(gps_buffer);
+          year = getYear(gps_buffer);
           //======================UNTESTED======================
           memset(&gps_buffer[0], 0, sizeof(gps_buffer));
           buffer_filled = false;
