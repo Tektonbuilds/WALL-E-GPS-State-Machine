@@ -249,7 +249,9 @@ void loop() {
             writeToSD(current_gps_string);
         }
         else {
-           gps_no_lock_buffer = "GPS did not acquire a lock, and button override was used.\n";
+           gps_no_lock_buffer = "GPS did not acquire a lock, and button override was used. GPS Buffer: ";
+           gps_no_lock_buffer.concat(gps_buffer);
+           gps_no_lock_buffer.concat("\n");
            gps_no_lock_buffer.toCharArray(gps_no_lock_string, 500);
            writeToSD(gps_no_lock_string);
         }
