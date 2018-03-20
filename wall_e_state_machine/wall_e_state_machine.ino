@@ -22,6 +22,7 @@ int num_bytes = 8;
 bool buffer_filled;
 String buf;
 char gps_buffer[500];
+String last_gps_locked_buffer_with_gprmc;
 
 // Variables to store most up to date information
 String current_gps_buffer;
@@ -233,6 +234,7 @@ void setup()
   gpsLock = false;
   buffer_filled = false;
   buf = "";
+  last_gps_locked_buffer_with_gprmc = "(No GPS string ever collected)";
   Wire.begin();
   Serial.begin(9600);
     while (!Serial) {
@@ -276,6 +278,13 @@ void loop() {
     latitude = getLatitude(gps_buffer);
     longitude = getLongitude(gps_buffer);
   }
+
+  // For constantly keeping track of the last gps string that had "$GPRMC" and a GPS lock
+  if (buffer_filled && doesGpsStringContainGprmcAndGpsLock(gps_buffer)) {
+    last_gps_locked_buffer_with_gprmc = "";
+    last_gps_locked_buffer_with_gprmc.concat(gps_buffer);
+  }
+  
   switch (state) {
     case 1:
         Serial.println("State 1!");
@@ -336,7 +345,7 @@ void loop() {
         }
         else {
            gps_no_lock_buffer = "No GPSLock - button override. GPS Buffer: ";
-           gps_no_lock_buffer.concat(gps_buffer);
+           gps_no_lock_buffer.concat(last_gps_locked_buffer_with_gprmc);
            gps_no_lock_buffer.concat("\n");
            gps_no_lock_buffer.toCharArray(gps_no_lock_string, 500);
            writeToSD(gps_no_lock_string);

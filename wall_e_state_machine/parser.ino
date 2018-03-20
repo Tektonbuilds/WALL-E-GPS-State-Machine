@@ -1,5 +1,56 @@
 int debug = 0;
 
+// Just checks string to make sure it starts with "$GPRMC" and has a GPS lock
+bool doesGpsStringContainGprmcAndGpsLock(char string[]) {
+  int i;
+
+  for (i = 0;; i++) {
+    if (string[i] == '\0') {
+      // Serial.println("String has end");
+      break;
+    }
+  }
+
+  if (i <= 10) {
+    // Serial.println("i less than 10");
+    return false;
+  }
+
+  char* gprmc = "$GPRMC";
+  for (i = 0; ; i++) {
+    if (gprmc[i] != '\0') {
+      if (string[i] != gprmc[i]) {
+  // Serial.println("Does not contain $GPRMC");
+        return false;
+      }
+    }
+    else {
+      break;
+    }
+  }
+
+  if (isNotComma(string[i])) {
+    // Serial.println("first comma failed");
+    return false;
+  }
+
+  // Get to the next comma (Contains the time string)
+  for (++i; string[i] != ','; i++) {}
+
+  if (isNotComma(string[i])) {
+    // Serial.println("second comma failed");
+    return false;
+  }
+
+  // If it's not GPS-locked just return false
+  if (string[++i] != 'A') {
+    // Serial.println("not GPS-locked!");
+    return false;
+  }
+
+  return true;
+}
+
 // Returns false if the input is not valid or if the input is not GPS-locked
 bool isGpsLocked(char string[]) {
   int i = 0;
