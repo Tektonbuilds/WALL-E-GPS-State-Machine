@@ -2,7 +2,9 @@
 #include <SD.h>
 #include <Wire.h>
 
-int buttonPin = A0;                 // the number of the input pin
+int buttonPin = 23;                 // the number of the input pin
+const int chipSelect = BUILTIN_SDCARD;
+
 int gpsLed = 15;                    // the led that will flash when the GPS has a signal, also flashes 3 times when recording starts and twice when it stops
 int redPin = 2;                     // the red LEDs used for synchronizing the two cameras
 int camera = 16;
@@ -231,32 +233,36 @@ void printLatestGPSInfo() {
 
 void setup()
 {
+  
   gpsLock = false;
   buffer_filled = false;
   buf = "";
   last_gps_locked_buffer_with_gprmc = "(No GPS string ever collected)";
   Wire.begin();
-  Serial.begin(9600);
-    while (!Serial) {
+ // Serial.begin(9600);
+  Serial.begin(38400);
+
+  while (!Serial) {
     ; // Wait for serial port to connect. Needed for Leonardo only
   }
 
 
   Serial.print("Initializing SD card...");
 
-  if (!SD.begin(0)) {
+  if (!SD.begin(chipSelect)) {
     Serial.println("initialization failed!");
     return;
   }
   Serial.println("initialization done.");
-
-  pinMode(buttonPin, INPUT);
+  
+  pinMode(23, INPUT);
   pinMode(gpsLed, OUTPUT);
   pinMode(redPin, OUTPUT);
   pinMode(camera, OUTPUT);
 }
 
 void loop() {
+  
   keepTime();
   Wire.requestFrom(addr, num_bytes);    // Request 6 bytes from slave device #8
   while (Wire.available()) {
@@ -272,6 +278,7 @@ void loop() {
       }
     }
   }
+  
   // keep updating coords to get most recent location
   // TODO: We need keep track of already finding a GPS lock and ignoring this condition
   if (buffer_filled && isGpsLocked(gps_buffer)) {
@@ -287,7 +294,7 @@ void loop() {
   
   switch (state) {
     case 1:
-        Serial.println("State 1!");
+        Serial.print("State 1!  ");
         //state = 2;
         // If GPS acquires signal, move on
         Serial.println(gps_buffer);
@@ -313,17 +320,17 @@ void loop() {
           time_now = millis();
         }
         // If the GPS doesn't get signal, a button press can override, skip to state 3, and allow us to start recording anyway
-        else if (analogRead(buttonPin) > 150) {
+        else if (digitalRead(buttonPin) == HIGH) {
           state = 3;
         }
         break;
     case 2:
-        Serial.println("Numbah 2!!!!");
+        Serial.print("Numbah 2!!!!  ");
         Serial.println(current_gps_string);
         // led will blink, signaling that the GPS is ready and user can record
         // waiting for button to be pushed
-        reading = analogRead(buttonPin);
-        if (reading > 150) {
+        reading = digitalRead(buttonPin);
+        if (reading == HIGH) {
           digitalWrite(gpsLed, LOW);
           state = 3;
         }
@@ -373,8 +380,8 @@ void loop() {
         break;
      case 4:
         Serial.println("State 4: waiting to turn off camera!");
-        reading = analogRead(buttonPin);
-        if (reading > 150) {
+        reading = digitalRead(buttonPin);
+        if (reading == HIGH) {
           digitalWrite(camera, LOW);
           
           // Flash the gps led to indicate recording has stopped
@@ -392,6 +399,8 @@ void loop() {
         delayMillis(500);
         state = 1;
         break;
+     
   }
+  
 }
 
