@@ -34,7 +34,7 @@ bool doesGpsStringContainGprmcAndGpsLock(char string[]) {
     return false;
   }
 
-  // Get to the next comma (Contains the time string)
+  // Get to the next comma (Contains thea time string)
   for (++i; string[i] != ','; i++) {}
 
   if (isNotComma(string[i])) {
