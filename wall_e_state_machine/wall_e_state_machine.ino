@@ -240,11 +240,16 @@ void setup()
   last_gps_locked_buffer_with_gprmc = "(No GPS string ever collected)";
   Wire.begin();
  // Serial.begin(9600);
+  while (!Serial && (millis() < 2000)) ;
   Serial.begin(38400);
+  delay(250);
+  Serial.println("Setup Called");
+  Serial.flush(); // make sure it goes out before something else called.
+//  Serial.begin(38400);
 
-  while (!Serial) {
-    ; // Wait for serial port to connect. Needed for Leonardo only
-  }
+//  while (!Serial) {
+//    ; // Wait for serial port to connect. Needed for Leonardo only
+//  }
 
 
   Serial.print("Initializing SD card...");
